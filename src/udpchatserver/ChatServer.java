@@ -51,7 +51,7 @@ public class ChatServer extends Thread {
                     // respond to user connection
                     connectionRequest(packet);
                     String id = clientAddress.toString() + "," + clientPort + ". " + content.split(":")[1];
-                    System.out.println(id);
+                    //System.out.println(id);
                     String clientName1 = content.split(":")[1];
                     char[] clientNameChars = clientName1.toCharArray();
                     
@@ -72,7 +72,7 @@ public class ChatServer extends Thread {
                     String id = clientAddress.toString() + "," + clientPort + ". " + contentDecoded[0];
                     //System.out.println(id);
                     String recipient = contentDecoded[2];
-                    System.out.println(recipient);
+                    //System.out.println(recipient);
                     textTransmissionRequest(id, content, packet, recipient);
                 }
             } catch (Exception e) {
@@ -95,7 +95,7 @@ public class ChatServer extends Thread {
         //System.out.println("all".equals("all"));
         //System.out.println(recipient.equals("all"));
         if (charArrayEquality(recipient.toCharArray(), "all".toCharArray())) {
-            System.out.println("Broadcast");
+            //System.out.println("Broadcast");
             for (int i = 0; i < clientAddresses.size(); i++) {
                 InetAddress cl = clientAddresses.get(i);
                 int cp = clientPorts.get(i);
@@ -103,7 +103,13 @@ public class ChatServer extends Thread {
                 socket.send(packet);
             }
         } else {
-            System.out.println("One-to-one messsage");
+            //System.out.println("One-to-one messsage");
+            DatagramPacket packetOrigin;
+            InetAddress clOrigin = packet.getAddress();
+            int cpOrigin = packet.getPort();
+            String msg = id + " : " + content;
+            packetOrigin = new DatagramPacket(msg.getBytes(), msg.getBytes().length, clOrigin, cpOrigin);
+            socket.send(packetOrigin);
             for (int i = 0; i < clientAddresses.size(); i++) {
                 if (charArrayEquality(recipient.toCharArray(), clientNames.get(i))) {
                     InetAddress cl = clientAddresses.get(i);
