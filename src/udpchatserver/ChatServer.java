@@ -41,7 +41,14 @@ public class ChatServer extends Thread {
                 InetAddress clientAddress = packet.getAddress();
                 int clientPort = packet.getPort();
                 
-                String id = clientAddress.toString() + "," + clientPort;
+                // separate the username from the content
+                //System.out.println(content);
+                String[] contentDecoded = content.split("XXXSEPARATORXXX");
+                //System.out.println(Arrays.toString(contentDecoded));
+                content = contentDecoded[1]; // the message body
+                //System.out.println(content);
+                String id = clientAddress.toString() + "," + clientPort + ". " + contentDecoded[0];
+                //System.out.println(id);
                 if (!existingClients.contains(id)) {
                     existingClients.add( id );
                     clientPorts.add( clientPort );
