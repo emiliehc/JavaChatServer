@@ -21,7 +21,7 @@ public class ChatServer extends Thread {
     private DatagramSocket socket;
     private ArrayList<InetAddress> clientAddresses;
     private ArrayList<Integer> clientPorts;
-    private ArrayList<String> clientNames;
+    private ArrayList<char[]> clientNames;
     private HashSet<String> existingClients;
 
     public ChatServer() throws IOException {
@@ -52,13 +52,16 @@ public class ChatServer extends Thread {
                     connectionRequest(packet);
                     String id = clientAddress.toString() + "," + clientPort + ". " + content.split(":")[1];
                     System.out.println(id);
+                    String clientName1 = content.split(":")[1];
+                    char[] clientNameChars = clientName1.toCharArray();
+                    
                     if (!existingClients.contains(id)) {
                         existingClients.add(id);
                         clientPorts.add(clientPort);
                         clientAddresses.add(clientAddress);
-                        clientNames.add(new String(content.split(":")[1].getBytes("UTF-16"), "UTF-16"));
+                        clientNames.add(clientNameChars);
                     }
-
+                    
                 } else {
                     // separate the username from the content
                     //System.out.println(content);
@@ -69,8 +72,6 @@ public class ChatServer extends Thread {
                     String id = clientAddress.toString() + "," + clientPort + ". " + contentDecoded[0];
                     //System.out.println(id);
                     String recipient = contentDecoded[2];
-                    //System.out.println(recipient);
-                    recipient = new String(recipient.getBytes("UTF-16"), "UTF-16");
                     System.out.println(recipient);
                     textTransmissionRequest(id, content, packet, recipient);
                 }
@@ -93,7 +94,7 @@ public class ChatServer extends Thread {
         //System.out.println(recipient);
         //System.out.println("all".equals("all"));
         //System.out.println(recipient.equals("all"));
-        if (recipient.equals("all")) {
+        if (charArrayEquality(recipient.toCharArray(), "all".toCharArray())) {
             System.out.println("Broadcast");
             for (int i = 0; i < clientAddresses.size(); i++) {
                 InetAddress cl = clientAddresses.get(i);
@@ -104,7 +105,7 @@ public class ChatServer extends Thread {
         } else {
             System.out.println("One-to-one messsage");
             for (int i = 0; i < clientAddresses.size(); i++) {
-                if (recipient.equals(clientNames.get(i))) {
+                if (charArrayEquality(recipient.toCharArray(), clientNames.get(i))) {
                     InetAddress cl = clientAddresses.get(i);
                     int cp = clientPorts.get(i);
                     packet = new DatagramPacket(data, data.length, cl, cp);
@@ -114,8 +115,23 @@ public class ChatServer extends Thread {
         }
     }
 
+    private static boolean charArrayEquality(char[] a, char[] b) {
+        int length = a.length;
+        if (b.length < a.length) {
+            length = b.length;
+        }
+        boolean x = true;
+        for (int i = 0; i < length; i++) {
+            if (a[i] != b[i]) {
+                x = false;
+            }
+        }
+        return x;
+    }
+    
     public static void main(String args[]) throws Exception {
         ChatServer s = new ChatServer();
         s.start();
     }
+    
 }
