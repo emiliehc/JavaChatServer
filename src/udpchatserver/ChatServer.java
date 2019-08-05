@@ -88,6 +88,10 @@ public class ChatServer extends Thread {
                     data = onlineUsers.getBytes();
                     packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
                     socket.send(packetReply);
+                    onlineUsers = "WHOSONLINEOnline users:";
+                    data = onlineUsers.getBytes();
+                    packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
+                    socket.send(packetReply);
                     for (int i = 0; i < existingClients.size(); i++) {
                         if (clientOnline.get(i)) {
                             onlineUsers = "WHOSONLINE" + existingClients.get(i);
@@ -96,10 +100,6 @@ public class ChatServer extends Thread {
                             socket.send(packetReply);
                         }
                     }
-                    onlineUsers = "WHOSONLINEOnline users:";
-                    data = onlineUsers.getBytes();
-                    packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
-                    socket.send(packetReply);
                     onlineUsers = "WHOSONLINE------------------------------------";
                     data = onlineUsers.getBytes();
                     packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
