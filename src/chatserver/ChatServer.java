@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package udpchatserver;
+package chatserver;
 
 /**
  *
@@ -17,7 +17,7 @@ public class ChatServer extends Thread {
 
     public static ChatServer s;
 
-    public final static int PORT = 7331;
+    public final static int PORT = 8080;
     private final static int BUFFER = 1024;
 
     private DatagramSocket socket;
@@ -80,6 +80,8 @@ public class ChatServer extends Thread {
                         }
                     }
                 } else if (content.startsWith("WHOSONLINE")) {
+                    DatagramPacket ack = new DatagramPacket("ACK".getBytes(), "ACK".getBytes().length, packet.getAddress(), packet.getPort());
+                    socket.send(ack);
                     // get a list of people who are online
                     String onlineUsers;
                     byte[] data;
@@ -117,6 +119,9 @@ public class ChatServer extends Thread {
                         //System.out.println(id);
                         String recipient = contentDecoded[2];
                         //System.out.println(recipient);
+                        // ack info
+                        DatagramPacket ack = new DatagramPacket("ACK".getBytes(), "ACK".getBytes().length, packet.getAddress(), packet.getPort());
+                        socket.send(ack);
                         textTransmissionRequest(id, content, packet, recipient);
                     } catch (java.lang.ArrayIndexOutOfBoundsException e) {
 
