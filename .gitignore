@@ -23,3 +23,7 @@
 hs_err_pid*
 /build/
 /dist/
+
+# build script
+build.sh
+build.bat
