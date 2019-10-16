@@ -18,15 +18,17 @@ public class ChatServer extends Thread {
     public static ChatServer s;
 
     public final static int PORT = 7331;
-    private final static int BUFFER = 1024;
+    protected final static int BUFFER = 1024;
 
-    private DatagramSocket socket;
-    private ArrayList<InetAddress> clientAddresses;
-    private ArrayList<Integer> clientPorts;
-    private ArrayList<char[]> clientNames;
+    protected DatagramSocket socket;
+    protected ArrayList<InetAddress> clientAddresses;
+    protected ArrayList<Integer> clientPorts;
+    protected ArrayList<char[]> clientNames;
     protected ArrayList<String> existingClients;
     protected ArrayList<Boolean> clientOnline;
     protected ArrayList<Long> clientLastSeen;
+    // user ArrayList
+    protected ArrayList<User> users;
 
     public ChatServer() throws IOException {
         socket = new DatagramSocket(PORT);
@@ -61,6 +63,7 @@ public class ChatServer extends Thread {
                     String clientName1 = content.split(":")[1];
                     char[] clientNameChars = clientName1.toCharArray();
 
+
                     if (!existingClients.contains(id)) {
                         System.out.println(id + " connected");
                         existingClients.add(id);
@@ -70,6 +73,11 @@ public class ChatServer extends Thread {
                         clientOnline.add(true);
                         clientLastSeen.add(java.lang.System.currentTimeMillis());
                         System.out.println("Current Time: " + java.lang.System.currentTimeMillis());
+
+                        // add to person
+                        User u = new User(clientNameChars, clientAddress, clientPort);
+                        users.add(u);
+
                     }
 
                     // refresh the online status of the user
