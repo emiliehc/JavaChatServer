@@ -1,7 +1,25 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * The MIT License
+ *
+ * Copyright 2019 njche.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package chatserver;
 
@@ -21,23 +39,14 @@ public class ChatServer extends Thread {
     protected final static int BUFFER = 1024;
 
     protected DatagramSocket socket;
-    protected ArrayList<InetAddress> clientAddresses;
-    protected ArrayList<Integer> clientPorts;
-    protected ArrayList<char[]> clientNames;
+
     protected ArrayList<String> existingClients;
-    protected ArrayList<Boolean> clientOnline;
-    protected ArrayList<Long> clientLastSeen;
     // user ArrayList
-    protected ArrayList<User> users;
+    protected List<User> users = new ArrayList<>();
 
     public ChatServer() throws IOException {
         socket = new DatagramSocket(PORT);
-        clientAddresses = new ArrayList();
-        clientPorts = new ArrayList();
-        clientNames = new ArrayList();
         existingClients = new ArrayList();
-        clientOnline = new ArrayList();
-        clientLastSeen = new ArrayList();
     }
 
     public void run() {
@@ -62,29 +71,26 @@ public class ChatServer extends Thread {
                     //System.out.println(id);
                     String clientName1 = content.split(":")[1];
                     char[] clientNameChars = clientName1.toCharArray();
-
+                    String clientNameString = new String(clientNameChars).trim().replace(" ", "");
+                    clientNameChars = clientNameString.toCharArray();
 
                     if (!existingClients.contains(id)) {
                         System.out.println(id + " connected");
+
                         existingClients.add(id);
-                        clientPorts.add(clientPort);
-                        clientAddresses.add(clientAddress);
-                        clientNames.add(clientNameChars);
-                        clientOnline.add(true);
-                        clientLastSeen.add(java.lang.System.currentTimeMillis());
                         System.out.println("Current Time: " + java.lang.System.currentTimeMillis());
 
                         // add to person
-                        User u = new User(clientNameChars, clientAddress, clientPort);
+                        User u = new User(id, clientNameString, clientAddress, clientPort);
                         users.add(u);
 
                     }
 
                     // refresh the online status of the user
-                    for (int i = 0; i < existingClients.size(); i++) {
-                        if (existingClients.get(i).equals(id)) {
-                            clientOnline.set(i, true);
-                            clientLastSeen.set(i, java.lang.System.currentTimeMillis());
+                    for (int i = 0; i < users.size(); i++) {
+                        if (users.get(i).id.equals(id)) {
+                            users.get(i).isOnline = true;
+                            users.get(i).lastSeen = java.lang.System.currentTimeMillis();
                         }
                     }
                 } else if (content.startsWith("WHOSONLINE")) {
@@ -102,9 +108,9 @@ public class ChatServer extends Thread {
                     data = onlineUsers.getBytes();
                     packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
                     socket.send(packetReply);
-                    for (int i = 0; i < existingClients.size(); i++) {
-                        if (clientOnline.get(i)) {
-                            onlineUsers = "WHOSONLINE" + existingClients.get(i);
+                    for (int i = 0; i < users.size(); i++) {
+                        if (users.get(i).isOnline) {
+                            onlineUsers = "WHOSONLINE" + users.get(i).id;
                             data = onlineUsers.getBytes();
                             packetReply = new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
                             socket.send(packetReply);
@@ -132,12 +138,16 @@ public class ChatServer extends Thread {
                         socket.send(ack);
                         textTransmissionRequest(id, content, packet, recipient);
                     } catch (java.lang.ArrayIndexOutOfBoundsException e) {
-
                     }
 
                 }
             } catch (IOException e) {
                 System.err.println(e);
+            } catch (java.lang.NullPointerException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            } catch (java.lang.IndexOutOfBoundsException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -157,9 +167,9 @@ public class ChatServer extends Thread {
         //System.out.println(recipient.equals("all"));
         if (charArrayEquality(recipient.toCharArray(), "all".toCharArray())) {
             //System.out.println("Broadcast");
-            for (int i = 0; i < clientAddresses.size(); i++) {
-                InetAddress cl = clientAddresses.get(i);
-                int cp = clientPorts.get(i);
+            for (int i = 0; i < users.size(); i++) {
+                InetAddress cl = users.get(i).address;
+                int cp = users.get(i).port;
                 packet = new DatagramPacket(data, data.length, cl, cp);
                 socket.send(packet);
             }
@@ -171,10 +181,10 @@ public class ChatServer extends Thread {
             String msg = id + " : " + content;
             packetOrigin = new DatagramPacket(msg.getBytes(), msg.getBytes().length, clOrigin, cpOrigin);
             socket.send(packetOrigin);
-            for (int i = 0; i < clientAddresses.size(); i++) {
-                if (charArrayEquality(recipient.toCharArray(), clientNames.get(i))) {
-                    InetAddress cl = clientAddresses.get(i);
-                    int cp = clientPorts.get(i);
+            for (int i = 0; i < users.size(); i++) {
+                if (charArrayEquality(recipient.toCharArray(), users.get(i).name.toCharArray())) {
+                    InetAddress cl = users.get(i).address;
+                    int cp = users.get(i).port;
                     packet = new DatagramPacket(data, data.length, cl, cp);
                     socket.send(packet);
                 }
@@ -217,9 +227,9 @@ class CheckOnline implements Runnable {
         while (true) {
             try {
                 Thread.sleep(1000);
-                for (int i = 0; i < ChatServer.s.existingClients.size(); i++) {
-                    if (java.lang.System.currentTimeMillis() - ChatServer.s.clientLastSeen.get(i) > 5000 && ChatServer.s.clientOnline.get(i) == true) {
-                        ChatServer.s.clientOnline.set(i, false);
+                for (int i = 0; i < ChatServer.s.users.size(); i++) {
+                    if (java.lang.System.currentTimeMillis() - ChatServer.s.users.get(i).lastSeen > 5000 && ChatServer.s.users.get(i).isOnline) {
+                        ChatServer.s.users.get(i).isOnline = false;
                         System.out.println(ChatServer.s.existingClients.get(i) + " disconnected");
                     }
                 }
